@@ -1,0 +1,92 @@
+{
+  "date_source": "2026-10-09",
+  "all_fields": 1050,
+  "fields_visible": 897,
+  "fields_auxiliary": 153,
+  "segments": [
+    {
+      "code": "hospedagem",
+      "name": "Meios de hospedagem",
+      "aba": "MEIOS DE HOSPEDAGEM ",
+      "line": 5,
+      "fields": 193
+    },
+    {
+      "code": "alimentacao",
+      "name": "Meios de alimentação e bebidas",
+      "aba": "MEIOS DE ALIMENTAÇÃO E BEBIDAS",
+      "line": 4,
+      "fields": 141
+    },
+    {
+      "code": "agencias",
+      "name": "Agências e operadoras de turismo",
+      "aba": "AGÊNCIAS E OPERADORAS DE TURISM",
+      "line": 3,
+      "fields": 56
+    },
+    {
+      "code": "atrativos",
+      "name": "Atrativos lazer e entretenimento",
+      "aba": "ATRATIVOS, LAZER E ENTRETENIMEN",
+      "line": 4,
+      "fields": 198
+    },
+    {
+      "code": "transporte",
+      "name": "Locadoras de veículos e transporte turístico",
+      "aba": "LOCADORA DE VEÍC. E TRANSP. TUR",
+      "line": 5,
+      "fields": 24
+    },
+    {
+      "code": "espacos_eventos",
+      "name": "Espaços para eventos",
+      "aba": "ESPAÇOS PARA EVENTOS ",
+      "line": 3,
+      "fields": 215
+    },
+    {
+      "code": "servicos_eventos",
+      "name": "Organizadores e serviços para eventos",
+      "aba": "ORGANIZADORES  SERVIÇOS PARA EV",
+      "line": 4,
+      "fields": 34
+    },
+    {
+      "code": "guias",
+      "name": "Guias de turismo",
+      "aba": "GUIAS DE TURISMO ",
+      "line": 4,
+      "fields": 14
+    },
+    {
+      "code": "artesanato",
+      "name": "Artesanato e comércio diferenciado",
+      "aba": "ARTESANATO E COMÉRCIO DIFERENCI",
+      "line": 5,
+      "fields": 22
+    }
+  ],
+  "recommended_types": {
+    "Identificador em texto": 35,
+    "Texto": 87,
+    "Seleção": 31,
+    "Data": 13,
+    "Coordenadas": 9,
+    "Sim ou Não": 685,
+    "Telefone em texto": 10,
+    "Email em texto": 11,
+    "URL em texto": 28,
+    "Número inteiro": 35,
+    "Horário em texto": 9,
+    "Lista de textos": 20,
+    "Sim ou Não com detalhe": 15,
+    "Texto com indicação": 46,
+    "Percentual": 6,
+    "Sem definição": 2,
+    "Data ou ano": 3,
+    "Número decimal": 5
+  },
+  "no_data_rows_used": true
+}
