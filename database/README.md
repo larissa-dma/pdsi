@@ -4,18 +4,10 @@
 
 ---
 
-# OTO — Estrutura do Inventário para PostgreSQL (versão 2, 04/11/2026)
+# OTO:  Estrutura do Inventário para PostgreSQL 
 
 Este projeto **usa somente os metadados** enviados por Daniel (dicionário HTML, relatório PDF e estrutura das abas Excel). **Nenhuma linha de empresas ou profissionais do inventário foi copiada, exportada ou usada como base de dados fictícios**. Os dados demonstrativos são sintéticos.
 
-## O que mudou em relação à versão anterior
-
-- Cadastro do inventário não é limitado a um único segmento: `registro_inventario` → `inventario_vinculo_segmento` → `inventario_segmento` permite associação M:N.
-- Os **9 segmentos** são catálogos próprios, com a aba e linha de cabeçalho originais.
-- O dicionário de **1.050 posições** (897 nas abas visíveis, 153 na auxiliar) é carregado em `inventario_campo`. A aba oculta não é um segmento.
-- Respostas usam colunas físicas tipadas em `inventario_resposta` com trigger de validação, em lugar de uma tabela de mais de 1.000 colunas. As regras preservam `NULL`, datas parciais, percentuais, coordenadas, detalhes e itens de lista.
-- Tabelas específicas `inventario_canal`, `inventario_atividade`, `inventario_cadastur` e `inventario_profissional` evitam misturar contatos, CNAEs, situação CADASTUR e profissionais em um cadastro plano.
-- Toda a modelagem de **pesquisas** anterior é mantida, mas continua provisória: estes documentos cobrem **Inventário**, não o layout completo das pesquisas.
 
 ## Arquivos
 
@@ -27,7 +19,7 @@ Este projeto **usa somente os metadados** enviados por Daniel (dicionário HTML,
 - `db/seeds/001_demo.sql`: demonstração anterior de pesquisas, opcional, para ambiente vazio.
 - `docs/resumo_estrutura.json`: quantitativos para verificação do catálogo.
 
-## Início no Docker (base nova)
+## Início no Docker 
 
 ```bash
 cp .env.example .env
