@@ -2,7 +2,6 @@
 
 Este projeto cria um **PostgreSQL 17 local**, com o catálogo das planilhas do Daniel e **registros inteiramente fictícios**. Não envia nada para a nuvem e não importa dados reais da Prefeitura.
 
-**Status:** o esquema é preliminar, especialmente os módulos de pesquisa; o inventário é baseado no dicionário de 09/10/2026. A execução abaixo depende de Docker Desktop instalado na sua máquina.
 
 ## 1. Instalar o Docker Desktop
 
@@ -84,7 +83,14 @@ docker compose up -d         # reinicia
 - **26 tabelas**: 18 do esquema inicial (`001_init.sql`) e 8 específicas do Inventário (`002_inventario_estrutura.sql`).
 - **9 segmentos** turísticos com suas abas e cabeçalhos.
 - **1050 campos catalogados** (`003_catalogo_campos.sql`), 897 nas abas visíveis e 153 na auxiliar.
-- Campos opcionais/obrigatórios, perguntas agrupadas, escolhas de opções e validação institucional ainda pendentes.
-- Pesquisas de demanda, hospedagem e indicadores continuam modelos preliminares; o material do Daniel detalha **o inventário**, não todas as pesquisas.
 
-*Todos os registros de teste são explicitamente fictícios. Não houve importação nem cópia de linhas originais do Excel do OTO.*
+## O que ainda falta : 
+- Campos opcionais/obrigatórios, perguntas agrupadas, escolhas de opções e validação institucional ainda pendentes.
+- O banco representa o mapeamento inicial, mas ainda precisamos validar:
+- As regras de obrigatoriedade de cada campo.
+- As opções definitivas dos campos de seleção.
+- s agrupamentos das perguntas de acessibilidade.
+- lgumas precisões e restrições dos tipos SQL.
+- modelagem completa das pesquisas, que não estavam detalhadas nos três arquivos do Daniel.
+
+*Todos os registros de teste são fictícios. 
