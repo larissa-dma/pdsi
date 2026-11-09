@@ -1,0 +1,21 @@
+spring:
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/oto}
+    username: ${DATABASE_USER:oto_app}
+    password: ${DATABASE_PASSWORD}
+  flyway:
+    enabled: true
+server:
+  servlet:
+    session:
+      timeout: 30m
+      cookie:
+        http-only: true
+        same-site: lax
+        secure: ${COOKIE_SECURE:false}
+  error:
+    include-message: never
+oto:
+  frontend-origin: ${FRONTEND_ORIGIN:http://localhost:5173}
+  admin-identifier: ${ADMIN_IDENTIFIER:}
+  admin-password: ${ADMIN_PASSWORD:}
