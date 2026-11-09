@@ -10,8 +10,6 @@ git clone https://github.com/larissa-dma/pdsi.git
 cd ~/pdsi/backend
 ```
 
-Se já clonou, execute apenas `cd ~/pdsi/backend`. Use um espaço depois de `cd`; `cd/backend` não funciona. Não clone na raiz `/` do Mac. Cole apenas a URL, sem colchetes ou parênteses de formatação.
-
 ## 2. Conferir e iniciar o PostgreSQL
 
 ```bash
@@ -19,7 +17,7 @@ psql --version
 brew services list
 ```
 
-No ambiente usado aqui, o PostgreSQL 14 estava instalado pelo Homebrew e aparecia como `started`. Nesse caso, não é necessário Docker.
+No ambiente usado aqui no meu, o PostgreSQL 14 estava instalado pelo Homebrew e aparecia como `started`. Nesse caso, não é necessário Docker.
 
 Se ainda não estiver instalado e for usar a mesma versão:
 
@@ -302,4 +300,4 @@ mvn package
 
 Inclui login/sair, criação de usuários, inventário com respostas tipadas, formulários com rascunho/envio e consultas de gestão. Ainda pendentes: gestão completa de usuários e recuperação de senha, contatos/CADASTUR, processamento de planilhas, indicadores calculados segundo metodologia do OTO, relatórios e auditoria. Formulários não alimentam automaticamente `ocupacao_fluxo` ou `diaria_media`.
 
-Para publicar, configure HTTPS, `COOKIE_SECURE=true` e `FRONTEND_ORIGIN` com a origem exata. Não envie senhas, cookies ou arquivos de sessão ao GitHub. Os valores usados nos exemplos identificam contas de desenvolvimento; não representam credenciais de um serviço público.
+Para publicar, configure HTTPS, `COOKIE_SECURE=true` e `FRONTEND_ORIGIN` com a origem exata. 
