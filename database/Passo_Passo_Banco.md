@@ -1,7 +1,4 @@
-# OTO / PostgreSQL demonstrativo — Instruções para Mac (Apple Silicon ou Intel)
-
-Este projeto cria um **PostgreSQL 17 local**, com o catálogo das planilhas do Daniel e **registros inteiramente fictícios**. Não envia nada para a nuvem e não importa dados reais da Prefeitura.
-
+# OTO / PostgreSQL demonstrativo 
 
 ## 1. Instalar o Docker Desktop
 

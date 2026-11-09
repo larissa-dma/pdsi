@@ -1,6 +1,50 @@
 # OTO — PostgreSQL pronto para uso local
 
-**Comece por [LEIA-ME-PASSO-A-PASSO.md](LEIA-ME-PASSO-A-PASSO.md) e execute `./iniciar.sh`.**
+Para trabalhar com o backend, comece pelo [passo a passo do backend](../backend/README.md). Ele descreve o caminho validado com PostgreSQL local no Mac, sem Docker. O [guia original do banco](Passo_Passo_Banco.md) também está disponível; seus comandos Docker são uma alternativa.
+
+## Caminho usado no Mac: PostgreSQL local + backend
+
+Com PostgreSQL iniciado pelo Homebrew, crie apenas o banco vazio se ele ainda não existir:
+
+```bash
+createdb oto
+psql -d oto -c 'SELECT current_database();'
+```
+
+Configure e inicie a API conforme o [README do backend](../backend/README.md). Ela cria as tabelas e carrega o catálogo automaticamente pelo Flyway, incluindo V4 de usuários e formulários. Não execute as migrações SQL manualmente de novo se a API já as aplicou. Se as tabelas V1–V3 foram criadas antes da API, siga a seção de banco existente naquele guia.
+
+### Popular com cadastros fictícios
+
+Na raiz do repositório, em banco de desenvolvimento sem vínculos de inventário:
+
+```bash
+cd ~/pdsi
+psql -d oto -v ON_ERROR_STOP=1 -f database/db/seeds/002_demo_inventario.sql
+psql -d oto -c 'SELECT COUNT(*) FROM registro_inventario;'
+```
+
+Resultado esperado em banco sem cadastros: **19 registros**, com 20 vínculos e respostas sintéticas. Execute uma vez. O seed interrompe a carga se já houver vínculos. Não cria contas de login, formulários ou importações. Para conferir catálogo e vínculos:
+
+```bash
+psql -d oto -c 'SELECT COUNT(*) FROM inventario_segmento;'
+psql -d oto -c 'SELECT COUNT(*) FROM inventario_campo;'
+psql -d oto -c 'SELECT COUNT(*) FROM inventario_vinculo_segmento;'
+```
+
+Após a carga inicial, os resultados esperados são 9, 1.050 e 20, respectivamente.
+
+### Seed antigo de pesquisas
+
+`db/seeds/001_demo.sql` usa IDs fixos e exige tabelas de negócio vazias, inclusive `usuario`. Ele não pode ser executado no banco atual após a criação do administrador ou carga do inventário. Não apague usuários nem remova as proteções para forçar a execução. Para avaliá-lo, use um banco descartável separado, preparado com as migrações necessárias antes do bootstrap do administrador. O operador sintético criado por esse script não tem senha de login.
+
+### Consultar usuários e fazer backup
+
+```bash
+psql -d oto -P pager=off -c "SELECT id,nome,identificador,perfil,ativo,estabelecimento_id FROM usuario ORDER BY id;"
+pg_dump -d oto -Fc -f "$HOME/oto-backup.dump"
+```
+
+A consulta de usuários exige V4 aplicada pelo backend. Cada backup deve usar um nome novo se você quiser manter versões anteriores. O arquivo de backup não deve ser enviado ao GitHub. Veja [sobre o banco e acessos](../backend/sobre-o-banco.md) para distinguir usuário PostgreSQL de usuário da aplicação.
 
 ---
 
@@ -19,7 +63,7 @@ Este projeto **usa somente os metadados** enviados por Daniel (dicionário HTML,
 - `db/seeds/001_demo.sql`: demonstração anterior de pesquisas, opcional, para ambiente vazio.
 - `docs/resumo_estrutura.json`: quantitativos para verificação do catálogo.
 
-## Início no Docker 
+## Alternativa: início no Docker (somente banco) 
 
 ```bash
 cp .env.example .env
@@ -38,7 +82,7 @@ docker compose exec db psql -U oto_app -d oto -c "SELECT COUNT(*) FROM inventari
 docker compose exec -T db psql -v ON_ERROR_STOP=1 -U oto_app -d oto < db/seeds/002_demo_inventario.sql
 ```
 
-**Se o volume PostgreSQL já existir:** os scripts de `/docker-entrypoint-initdb.d` não rodam novamente. Aplique 002 e 003 **nessa ordem**, com backup e controle de migração; **não** apague volume nem execute seed em banco de produção.
+**Se o volume PostgreSQL já existir:** os scripts de `/docker-entrypoint-initdb.d` não rodam novamente. Somente se o banco ainda estiver na versão 001, aplique 002 e 003 **nessa ordem**, com backup e controle de migração. Se já foram aplicadas por Docker ou Flyway, não repita; **não** apague volume nem execute seed em banco de produção.
 
 ```bash
 docker compose exec -T db psql -v ON_ERROR_STOP=1 -U oto_app -d oto < db/migrations/002_inventario_estrutura.sql
