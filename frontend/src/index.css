@@ -1,13 +1,58 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 *, *::before, *::after {
   box-sizing: border-box;
 }
 
+:root {
+  --font: 'Inter', system-ui, sans-serif;
+
+  /* Cores institucionais */
+  --navy-900: #0A1F3D;
+  --navy-800: #0D2B5E;
+  --navy-700: #15295C;
+  --navy-600: #1A3A6B;
+  --navy-500: #1A4FA8;
+  --navy-400: #1A6DC0;
+
+  /* Ciano / accent */
+  --cyan-700: #0799B8;
+  --cyan-600: #0BAEC7;
+  --cyan-500: #0096C7;
+  --cyan-400: #1B9ED4;
+  --cyan-300: #2AACE2;
+  --cyan-200: #B8D4F0;
+  --cyan-100: #DCF0F9;
+  --cyan-50:  #EBF4FA;
+
+  /* Fundos */
+  --bg-page:   #EBF4FA;
+  --bg-card:   #FFFFFF;
+  --bg-stripe: #F5F9FC;
+
+  /* Texto */
+  --text-dark:   #1A2B3D;
+  --text-mid:    #4A6480;
+  --text-muted:  #607D8B;
+
+  /* Status */
+  --status-available-bg:  #E6F4F8;
+  --status-available-fg:  #0799B8;
+  --status-pending-bg:    #FFF4D9;
+  --status-pending-fg:    #94620A;
+  --status-sent-bg:       #E8F4F5;
+  --status-sent-fg:       #156F74;
+
+  /* Bordas */
+  --border: #D8E8F4;
+}
+
 body {
   margin: 0;
-  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
-  font-size: 16px;
-  color: #222;
-  background: #f0f4f8;
+  font-family: var(--font);
+  font-size: 14px;
+  color: var(--text-dark);
+  background: var(--bg-page);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -17,4 +62,14 @@ body {
 
 a {
   color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: var(--font);
+  cursor: pointer;
+}
+
+input, select, textarea {
+  font-family: var(--font);
 }
