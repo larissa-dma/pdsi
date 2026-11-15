@@ -76,5 +76,32 @@ def main():
     second.call('GET','/me',expected=401)
     second.login(login,'another-test-password')
     assert admin.call('GET','/secretaria/auditoria')
-    print('OK: atualização do inventário, filtros, CSV/XLSX, validação, confirmação, duplicidade, origem analítica, CSV/XLSX/PDF, indicadores/ODS, mapa, usuários, senhas, sessões e auditoria.')
+    quality(admin)
+    print('OK: QUAL-01 (nomes padronizados e duplicidades no PostgreSQL real), atualização do inventário, filtros, CSV/XLSX, validação, confirmação, duplicidade, origem analítica, CSV/XLSX/PDF, indicadores/ODS, mapa, usuários, senhas, sessões e auditoria.')
+def quality(admin):
+    """QUAL-01 no PostgreSQL real: a chave SQL precisa concordar com a chave Java."""
+    tag=uuid.uuid4().hex[:8]
+    segment=next(s['id'] for s in admin.call('GET','/secretaria/inventario/segmentos') if s['codigo']=='hospedagem')
+    first=admin.call('POST','/secretaria/inventario/registros',{'nome':f'  Pousada   São João {tag} ','endereco':' Rua  das Flores ','tipoCadastro':'estabelecimento'},expected=201)
+    assert first['nome']==f'Pousada São João {tag}' and first['endereco']=='Rua das Flores',first
+    admin.call('PUT',f"/secretaria/inventario/registros/{first['id']}/segmentos/{segment}")
+    admin.call('PUT',f"/secretaria/inventario/registros/{first['id']}/segmentos/{segment}")  # revincular o mesmo cadastro é permitido
+    second=admin.call('POST','/secretaria/inventario/registros',{'nome':f'POUSADA SAO JOAO {tag.upper()}','tipoCadastro':'estabelecimento'},expected=201)
+    admin.call('PUT',f"/secretaria/inventario/registros/{second['id']}/segmentos/{segment}",expected=409)
+    other=admin.call('POST','/secretaria/inventario/registros',{'nome':f'Hotel Outro {tag}','tipoCadastro':'estabelecimento'},expected=201)
+    admin.call('PUT',f"/secretaria/inventario/registros/{other['id']}/segmentos/{segment}")
+    admin.call('PUT',f"/secretaria/inventario/registros/{other['id']}",{'nome':f'pousada são joão {tag}','tipoCadastro':'estabelecimento'},expected=409)
+    csv=f'nome;segmento\nPOUSADA SÃO  JOÃO {tag};Hospedagem\nHotel Novo {tag};HOSPEDAGEM\nhotel novo {tag};hospedagem\n'.encode()
+    stage=upload(admin,'inventario-qualidade.csv',csv)
+    result=admin.call('POST',f"/secretaria/importacoes/previas/{stage['id']}/validar",{'tipo':'inventario','referencia':'QUAL-01','campos':{'nome':'nome','segmento':'segmento'}})
+    assert [r['valida'] for r in result['linhas']]==[False,True,False],result
+    assert f"cadastro {first['id']}" in result['linhas'][0]['erro'] and result['linhas'][2]['erro']=='Linha duplicada no arquivo',result
+    header='mes_referencia;estabelecimento_id;ocupacao_percentual;tipo_dado\n'
+    stage=upload(admin,'ocupacao-a.csv',f"{header}2099-03;{first['id']};70;consolidado\n".encode())
+    admin.call('POST',f"/secretaria/importacoes/previas/{stage['id']}/validar",{'tipo':'ocupacao','referencia':'QUAL-01','campos':{k:k for k in ['mes_referencia','estabelecimento_id','ocupacao_percentual','tipo_dado']}})
+    batch=admin.call('POST',f"/secretaria/importacoes/previas/{stage['id']}/confirmar",{'somenteValidas':False})
+    again=upload(admin,'ocupacao-b.csv',f"{header}2099-03;{first['id']};72;CONSOLIDADO\n2099-03;{first['id']};40;expectativa\n".encode())
+    result=admin.call('POST',f"/secretaria/importacoes/previas/{again['id']}/validar",{'tipo':'ocupacao','referencia':'QUAL-01','campos':{k:k for k in ['mes_referencia','estabelecimento_id','ocupacao_percentual','tipo_dado']}})
+    assert [r['valida'] for r in result['linhas']]==[False,True],result
+    assert f"lote {batch['id']}" in result['linhas'][0]['erro'],result
 if __name__=='__main__':main()

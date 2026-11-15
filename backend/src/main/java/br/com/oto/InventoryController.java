@@ -79,11 +79,49 @@ public class InventoryController {
       @DecimalMin("-180") @DecimalMax("180") BigDecimal longitude,
       @Size(max = 10000) String descricao,
       @Size(max = 10000) String razaoSocial,
-      @Pattern(regexp = "pendente|parcial|conferido|rejeitado") String situacaoConferencia) {}
+      @Pattern(regexp = "pendente|parcial|conferido|rejeitado") String situacaoConferencia) {
+    /** Mesmo registro com nome, endereço, bairro e razão social padronizados (QUAL-01). */
+    Registro cleaned() {
+      return new Registro(
+          Names.clean(nome),
+          Names.clean(endereco),
+          Names.clean(bairro),
+          tipoCadastro,
+          latitude,
+          longitude,
+          descricao,
+          Names.clean(razaoSocial),
+          situacaoConferencia);
+    }
+  }
+
+  /**
+   * Recusa um nome que já existe em outro cadastro do mesmo segmento, comparando sem maiúsculas,
+   * acentos ou espaços extras. {@code ignorarId} é o próprio cadastro em edição.
+   */
+  void rejectDuplicate(String nome, long segmentoId, Long ignorarId) {
+    var rows =
+        db.queryForList(
+            "SELECT r.id FROM registro_inventario r JOIN inventario_vinculo_segmento v ON"
+                + " v.registro_id=r.id WHERE v.segmento_id=? AND "
+                + Names.sqlKey("r.nome")
+                + "=? AND (?::bigint IS NULL OR r.id<>?) LIMIT 1",
+            segmentoId,
+            Names.key(nome),
+            ignorarId,
+            ignorarId);
+    if (!rows.isEmpty())
+      throw new ResponseStatusException(
+          CONFLICT,
+          "Já existe um cadastro com este nome no segmento (cadastro "
+              + rows.getFirst().get("id")
+              + "). Confira antes de duplicar.");
+  }
 
   @PostMapping("/registros")
   @ResponseStatus(CREATED)
-  public Map<String, Object> create(@Valid @RequestBody Registro r) {
+  public Map<String, Object> create(@Valid @RequestBody Registro input) {
+    var r = input.cleaned();
     if ((r.latitude() == null) != (r.longitude() == null))
       throw new ResponseStatusException(BAD_REQUEST, "Informe as duas coordenadas");
     return db.queryForMap(
@@ -103,6 +141,9 @@ public class InventoryController {
 
   @PutMapping("/registros/{id}/segmentos/{segmentoId}")
   public Map<String, Object> link(@PathVariable long id, @PathVariable long segmentoId) {
+    var names = db.queryForList("SELECT nome FROM registro_inventario WHERE id=?", String.class, id);
+    if (names.isEmpty()) throw new ResponseStatusException(NOT_FOUND);
+    rejectDuplicate(names.getFirst(), segmentoId, id);
     return db.queryForMap(
         "INSERT INTO inventario_vinculo_segmento(registro_id,segmento_id) VALUES (?,?) ON"
             + " CONFLICT(registro_id,segmento_id) DO UPDATE SET registro_id=EXCLUDED.registro_id"
@@ -112,7 +153,13 @@ public class InventoryController {
   }
 
   @PutMapping("/registros/{id}")
-  public Map<String, Object> update(@PathVariable long id, @Valid @RequestBody Registro r) {
+  public Map<String, Object> update(@PathVariable long id, @Valid @RequestBody Registro input) {
+    var r = input.cleaned();
+    for (Long segment :
+        db.queryForList(
+            "SELECT segmento_id FROM inventario_vinculo_segmento WHERE registro_id=?",
+            Long.class,
+            id)) rejectDuplicate(r.nome(), segment, id);
     if ((r.latitude() == null) != (r.longitude() == null))
       throw new ResponseStatusException(BAD_REQUEST, "Informe as duas coordenadas");
     var rows =

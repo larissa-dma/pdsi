@@ -40,9 +40,24 @@ V5 adiciona prévias de importação, versão de senha, histórico básico de a�
 
 Prévia de importação não altera os dados de negócio. Confirmar executa uma transação; linhas inválidas só são ignoradas após opção explícita e ficam registradas como pendências. Nomes de inventário repetidos no mesmo segmento são sinalizados, não mesclados automaticamente. Cadastros já existentes devem ser atualizados na ficha; o importador não faz atualização em massa por nome ambíguo.
 
+## Qualidade dos dados (QUAL-01)
+
+| Regra | Onde vale | Comportamento |
+| --- | --- | --- |
+| Campos ausentes | Importação e cadastro manual | Nome, segmento, mês, modalidade e valor obrigatórios são recusados com a coluna indicada |
+| Formatos inválidos | Importação e cadastro manual | Número com separador de milhar, percentual fora de 0–100, fluxo fracionado, mês que não é o dia 1, UF, coordenadas fora dos limites e modalidade desconhecida |
+| Padronização de nomes | Importação e cadastro manual | Nome, endereço, bairro e razão social são gravados sem espaços nas pontas e com espaços internos únicos. Maiúsculas e acentos são preservados como digitados |
+| Códigos sem diferença de maiúsculas | Importação | `Hospedagem`, `HOSPEDAGEM` e `hospedagem` indicam o mesmo segmento; `CONSOLIDADO` vale como `consolidado` |
+| Nome repetido no segmento | Importação, vínculo e edição manual | A comparação ignora maiúsculas, acentos e espaços extras (`Pousada São João` = `POUSADA  SAO JOAO`). A importação marca a linha como pendência e a API manual responde 409, informando o cadastro já existente |
+| Linha repetida no arquivo | Importação | A segunda ocorrência vira pendência |
+| Mesmo arquivo de novo | Importação | Bloqueado pelo hash do arquivo |
+| Ocupação ou diária repetida | Importação | Para um estabelecimento informado, um segundo dado do mesmo mês (e modalidade, na ocupação) vindo de outro arquivo vira pendência, indicando o lote original. Linhas municipais, sem estabelecimento, não são comparadas com o histórico |
+
+A comparação de nomes não usa a extensão `unaccent`. Java e SQL aplicam a mesma tabela de acentos (`Names.java`), então a regra funciona igual em qualquer instalação do PostgreSQL.
+
 ## Verificação realizada
 
-- Build Java/Maven e 21 testes unitários/web sem falhas.
+- Build Java/Maven e 52 testes unitários/web sem falhas (21 originais e 31 do QUAL-01/TST-01).
 - Build TypeScript/Vite sem erros.
 - Integração real em PostgreSQL temporário separado do banco da usuária: migrações, autenticação, isolamento de hospedagens, edição, contatos/CADASTUR, importações, bloqueio de duplicidade, fontes externas, consulta analítica, exportações, troca/redefinição de senha e desativação.
 - Navegador Chrome automático: login, navegação dos módulos, cadastro, publicação de pesquisa e preenchimento em viewport de celular; rascunho persiste ao recarregar e envio é confirmado pelo banco. Importação e download CSV também foram exercitados pela interface.
@@ -52,7 +67,7 @@ Testes reproduzíveis em `backend/scripts/smoke_test.py`, `backend/scripts/compl
 
 ## Limites de entrega e próximos aceites
 
-A versão entrega os fluxos locais integrados, não o aceite institucional. Ainda são necessários revisão da equipe/PO, carga e validação de dados oficiais, teste de aceitação TST-03 e definição/publicação do ambiente externo DEP-01. Não foi publicada uma URL de homologação. A publicação do código na branch de desenvolvimento não substitui a implantação do sistema nem o aceite do PO.
+A versão entrega os fluxos locais integrados, não o aceite institucional. Ainda são necessários revisão da equipe/PO, carga e validação de dados oficiais, teste de aceitação TST-03 (roteiro em [roteiro-aceitacao.md](roteiro-aceitacao.md)) e definição/publicação do ambiente externo DEP-01. Não foi publicada uma URL de homologação. A publicação do código na branch de desenvolvimento não substitui a implantação do sistema nem o aceite do PO.
 
 A visão pública PUB-01 não foi habilitada porque o backlog exige aprovação do conjunto publicável pelo PO. Dados internos permanecem autenticados. Recuperação automática por e-mail não foi adicionada; a Secretaria redefine senhas pela interface. Não há conversão automática de respostas arbitrárias de formulário em séries de ocupação/diária, remoção do cadastro mestre ou desvinculação de segmentos com respostas.
 

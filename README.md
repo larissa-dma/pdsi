@@ -15,6 +15,7 @@ O backend oferece uma API HTTP para o frontend consumir. O frontend React/Vite j
 - [Banco, usuários e tipos de acesso](backend/sobre-o-banco.md)
 - [Contrato de integração para o frontend](backend/docs/frontend.md)
 - [Verificação e testes](backend/docs/verificacao.md)
+- [Roteiro de aceitação com o PO (TST-03)](docs/roteiro-aceitacao.md)
 - [Design no Figma](https://www.figma.com/design/0OqnmHVvJakoG8gGGZkNe6/Observat%C3%B3rio-de-Turismo-de-Ol%C3%ADmpia?node-id=0-1)
 
 ## Contas de teste para a equipe
