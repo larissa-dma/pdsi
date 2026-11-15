@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { hospedagem } from "../api/endpoints";
 import type { Formulario } from "../api/endpoints";
 import { useAuth } from "../api/AuthContext";
-import { Pagination } from "../components/Workspace";
+import { Message, Pagination } from "../components/Workspace";
 import { useResponsive } from "../hooks/useResponsive";
 
 type Filtro = "todos" | "pendente" | "rascunho" | "enviado";
@@ -168,21 +168,7 @@ export default function FormulariosPage() {
       </div>
 
       {/* Erro */}
-      {erro && (
-        <div
-          style={{
-            background: "#FEF2F2",
-            border: "1px solid #FCA5A5",
-            borderRadius: "8px",
-            padding: "12px 16px",
-            color: "#B91C1C",
-            fontSize: "13px",
-            marginBottom: "16px",
-          }}
-        >
-          {erro}
-        </div>
-      )}
+      <Message error={erro ?? undefined} />
 
       {/* Tabela desktop / cards mobile */}
       {isMobile ? (

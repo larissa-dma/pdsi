@@ -1,3 +1,4 @@
+import { Message } from "../components/Workspace";
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
@@ -312,20 +313,7 @@ export default function LoginPage() {
               />
             </div>
 
-            {erro && (
-              <div
-                style={{
-                  background: "#FEF2F2",
-                  border: "1px solid #FCA5A5",
-                  borderRadius: "8px",
-                  padding: "10px 14px",
-                  fontSize: "13px",
-                  color: "#B91C1C",
-                }}
-              >
-                {erro}
-              </div>
-            )}
+            <Message error={erro ?? undefined} />
 
             <button
               type="submit"

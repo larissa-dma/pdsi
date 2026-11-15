@@ -44,6 +44,44 @@ Siga o [README do backend](backend/README.md).
 O PostgreSQL armazena os dados e o GitHub armazena os arquivos do projeto.
 Cada pessoa precisa configurar sua própria conexão. Dados inseridos no banco local não são enviados ao GitHub (esses dados são ficticios).
 
+## Perfis de acesso e abas do sistema
+
+Existem **dois perfis**: `SECRETARIA` e `HOSPEDAGEM`. O nome exibido na tela identifica a conta, não um terceiro perfil: tanto `admin@oto.local` quanto `secretaria@oto.local` têm acesso de Secretaria. As contas de demonstração aparecem como **Perfil da secretaria** e **Perfil da hospedagem**.
+
+### Secretaria
+
+| Aba | Para que serve |
+| --- | --- |
+| **Visão geral** | Consultar contagens, fluxo, ocupação, diária média, origem da demanda e observações de fontes externas. Séries analíticas têm filtros de período e modalidade; ausência de dados aparece como “—” ou estado vazio. |
+| **Ocupação hoteleira** | Consultar observações mensais de ocupação e fluxo, separando consolidado de expectativa e identificando o arquivo de origem. |
+| **Dados de pesquisas** | Criar formulários com perguntas e prazo, acompanhar a coleta, consultar respostas, prorrogar prazo e consultar os conjuntos de pesquisas importados. |
+| **Consulta** (Inventário) | Buscar, filtrar, criar e editar cadastros, vincular segmentos e preencher campos, contatos, CNAE e CADASTUR. |
+| **Mapa demonstrativo** | Explorar cadastros georreferenciados com filtros, legenda e agrupamento de pontos coincidentes. Selecionar um cadastro e abrir sua ficha. |
+| **Importação** | Carregar CSV/XLSX, mapear colunas, validar, conferir pendências e confirmar a gravação. Consultar histórico e linhas de origem. |
+| **Sustentabilidade ODS** | Cadastrar indicadores, unidades, metodologia e vínculos ODS; registrar valores por referência e fonte. O cálculo dos valores não é automático. |
+| **Relatórios e exportações** | Conferir prévias e baixar registros em CSV, XLSX ou PDF, com recortes disponíveis por conjunto. |
+| **Usuários e acessos** | Criar contas de Secretaria/Hospedagem, vincular hospedagens, ativar/desativar acessos e redefinir senhas. |
+| **Minha conta / senha** | Alterar a própria senha e entrar novamente. |
+
+### Hospedagem
+
+| Aba ou etapa | Para que serve |
+| --- | --- |
+| **Meus Formulários** | Listar pesquisas disponíveis para o estabelecimento vinculado, com filtros de disponíveis, pendentes/rascunhos e enviadas. |
+| **Preencher → Revisar → Enviar** | Responder às perguntas, salvar rascunho, retomar depois e confirmar o envio. Respostas enviadas não podem ser alteradas. |
+| **Confirmação da pesquisa** | Verificar se o banco confirmou o envio e consultar sua data. É uma etapa do formulário, não uma aba independente do menu. |
+| **Minha conta / senha** | Alterar a própria senha e entrar novamente. |
+
+**Sair** encerra a sessão em ambos os perfis. Hospedagem não acessa os módulos administrativos da Secretaria nem as respostas de outro estabelecimento. Formulários publicados são disponibilizados a todas as hospedagens vinculadas; não há seleção individual de destinatários nesta versão. Ainda não existe um perfil público.
+
+A explicação detalhada das abas, rotas e exemplos de uso está no [README do frontend](frontend/README.md#abas-e-fluxos-por-perfil).
+
+## Dados fictícios para testar as análises
+
+Os [CSVs de demonstração](database/exemplos_csv/LEIA-ME.md) ficam em `database/exemplos_csv/`. São arquivos separados para `ocupacao`, `diaria` e `demanda`; cada um deve ser importado no conjunto correspondente pela interface. Eles não são carregados automaticamente ao clonar o projeto.
+
+O seed inicial adiciona cadastros fictícios do inventário, mas não cria séries de ocupação, diária e demanda. Por isso o inventário pode ter registros enquanto os gráficos continuam vazios. Importar os CSVs de análises preenche essas consultas. Os dados permanecem fictícios; carregar um arquivo não os torna oficiais.
+
 ## Situação atual
 
 Login pelo navegador, gestão de contas/senhas, inventário, mapa, pesquisas e formulários, importação CSV/XLSX com validação, indicadores/ODS e relatórios CSV/XLSX/PDF estão integrados ao PostgreSQL. Os gráficos usam dados carregados, e não números fixos de demonstração. Sem dados, a interface informa a ausência.

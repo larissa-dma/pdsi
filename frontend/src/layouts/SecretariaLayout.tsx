@@ -271,6 +271,7 @@ export default function SecretariaLayout() {
         style={{
           marginLeft: isMobile ? 0 : "232px",
           flex: 1,
+          minWidth: 0,
           minHeight: "100vh",
           display: "flex",
           flexDirection: "column",
@@ -323,7 +324,14 @@ export default function SecretariaLayout() {
           </span>
         </div>
 
-        <main style={{ flex: 1, padding: "24px", background: "#F5F9FC" }}>
+        <main
+          style={{
+            flex: 1,
+            minWidth: 0,
+            padding: "24px",
+            background: "#F5F9FC",
+          }}
+        >
           <Outlet />
         </main>
       </div>

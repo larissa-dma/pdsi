@@ -84,6 +84,7 @@ export default function AdminDadosPage() {
     if (!selected) return;
     setBusy(true);
     setFailure("");
+    setMessage("");
     try {
       await api.put(`/secretaria/formularios/${selected.id}/prazo`, {
         prazo: newDeadline,

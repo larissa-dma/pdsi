@@ -82,16 +82,39 @@ export function Message({
   error?: string;
   success?: string;
 }) {
-  return error ? (
-    <div role="alert" className="notice error">
-      {error}
-    </div>
-  ) : success ? (
-    <div role="status" className="notice success">
-      {success}
-    </div>
+  const text = error || success;
+  const kind = error ? "error" : "success";
+  return text ? (
+    <DismissibleNotice key={`${kind}:${text}`} text={text} kind={kind} />
   ) : null;
 }
+function DismissibleNotice({
+  text,
+  kind,
+}: {
+  text: string;
+  kind: "error" | "success";
+}) {
+  const [visible, setVisible] = useState(true);
+  if (!visible) return null;
+  return (
+    <div
+      role={kind === "error" ? "alert" : "status"}
+      className={`notice ${kind}`}
+    >
+      <span className="notice-text">{text}</span>
+      <button
+        type="button"
+        className="notice-close"
+        aria-label="Fechar aviso"
+        onClick={() => setVisible(false)}
+      >
+        <span aria-hidden="true">×</span>
+      </button>
+    </div>
+  );
+}
+
 export function State({
   loading,
   error,

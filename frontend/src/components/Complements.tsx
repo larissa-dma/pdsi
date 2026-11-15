@@ -24,6 +24,7 @@ export default function Complements({ id }: { id: string }) {
   async function save(kind: string, body: Row) {
     setBusy(true);
     setFailure("");
+    setMessage("");
     try {
       await api.post(`/secretaria/inventario/registros/${id}/${kind}`, body);
       setMessage("Informação registrada.");
@@ -37,6 +38,7 @@ export default function Complements({ id }: { id: string }) {
   async function remove(kind: string, key: number) {
     if (!window.confirm("Remover esta informação complementar?")) return;
     setFailure("");
+    setMessage("");
     try {
       await api.delete(`/secretaria/inventario/registros/${id}/${kind}/${key}`);
       reload();

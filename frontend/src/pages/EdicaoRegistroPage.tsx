@@ -89,6 +89,7 @@ export default function EdicaoRegistroPage() {
     if (!selected || fresh) return;
     setBusy(true);
     setFailure("");
+    setMessage("");
     try {
       await api.put(
         `/secretaria/inventario/registros/${id}/segmentos/${selected}`,

@@ -65,11 +65,13 @@ export default function PreencherFormularioPage() {
             ))}
           </div>
           {(sent || closed) && (
-            <p className="notice success">
-              {sent
-                ? "Resposta já enviada. Consulte seus dados abaixo."
-                : "O prazo de resposta foi encerrado."}
-            </p>
+            <Message
+              success={
+                sent
+                  ? "Resposta já enviada. Consulte seus dados abaixo."
+                  : "O prazo de resposta foi encerrado."
+              }
+            />
           )}
           <Message error={failure} success={message} />
           <Card
