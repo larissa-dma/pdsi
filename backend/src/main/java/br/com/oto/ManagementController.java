@@ -27,7 +27,9 @@ public class ManagementController {
 
   @GetMapping("/pesquisas")
   public List<Map<String, Object>> surveys() {
-    return db.queryForList("SELECT * FROM conjunto_pesquisa ORDER BY nome");
+    return db.queryForList(
+        "SELECT c.*, (SELECT count(*) FROM importacao i WHERE i.conjunto_id=c.id) AS lotes FROM"
+            + " conjunto_pesquisa c ORDER BY nome");
   }
 
   @GetMapping("/importacoes")

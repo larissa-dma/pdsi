@@ -2,6 +2,25 @@
 
 API em Java 21 + Spring Boot 3.5 + PostgreSQL, com Spring Security, JDBC, Flyway e Swagger. Este guia reproduz o caminho que funcionou no Mac com zsh, sem Docker. Python 3 é usado apenas nos exemplos para ler e montar JSON no terminal; a aplicação é Java.
 
+## Atualização funcional de 15/11/2026
+
+O frontend já oferece login e gestão. Veja o [guia de uso](../docs/guia-de-uso.md) e a [matriz de entrega e testes](../docs/entrega-funcional.md). As migrações novas V5 e V6 são aplicadas na próxima inicialização; não apague nem repopule seu banco. As contas e os dados existentes são preservados. A redefinição de senha está em **Usuários e acessos** e a troca da própria senha em **Minha conta / senha**.
+
+Para usar a interface: inicie esta API na 8080, depois execute `npm ci` e `npm run dev` em `~/pdsi/frontend`, em outra aba. Abra http://localhost:5173/login.
+
+## Contas de teste para a equipe
+
+Acesse http://localhost:5173/login com uma das contas abaixo:
+
+| Perfil | Login | Senha inicial |
+| --- | --- | --- |
+| **Secretaria** | `secretaria@oto.local` | `Oto-O536MjGrk2mNK-QT` |
+| **Hospedagem** | `hospedagem@oto.local` | `Oto-uvg1mEEXI6jnu3ZR` |
+
+Estas credenciais de demonstração foram registradas na documentação por decisão da responsável pelo repositório privado. As duas contas já foram criadas no banco local usado durante o desenvolvimento; clonar o repositório não copia esse banco nem cria essas contas automaticamente. Em outro ambiente, crie-as pela interface **Usuários e acessos**, após configurar o primeiro administrador. A conta de Hospedagem está vinculada ao cadastro fictício **1011 — Meios de hospedagem 01**; em outro banco, escolha o cadastro correspondente do segmento hospedagem.
+
+Secretaria administra os módulos do sistema. Hospedagem preenche os formulários do estabelecimento vinculado. A conta `admin@oto.local` continua existindo separadamente, com a senha escolhida na configuração. As senhas das contas permanecem como hash BCrypt no PostgreSQL; a tabela acima documenta apenas as credenciais de teste.
+
 ## 1. Clonar e entrar na pasta correta
 
 ```bash
@@ -90,12 +109,12 @@ O administrador exige pelo menos 12 caracteres e no máximo 72 bytes. Não há s
 mvn spring-boot:run
 ```
 
-Na primeira execução, o Maven baixa as dependências. Em banco vazio, o Flyway aplica V1 a V4: estrutura inicial, inventário, catálogo e autenticação/formulários. Não é necessário executar as migrações SQL manualmente nesse caminho.
+Na primeira execução, o Maven baixa as dependências. Em banco vazio, o Flyway aplica V1 a V6: estrutura inicial, inventário, catálogo, autenticação/formulários, operação e fontes externas. Não é necessário executar as migrações SQL manualmente nesse caminho.
 
 Procure no log:
 
 ```text
-Successfully applied 4 migrations
+Successfully applied 6 migrations
 Tomcat started on port 8080
 Started OtoApplication
 ```
@@ -298,6 +317,12 @@ mvn test
 mvn package
 ```
 
-Inclui login/sair, criação de usuários, inventário com respostas tipadas, formulários com rascunho/envio e consultas de gestão. Ainda pendentes: gestão completa de usuários e recuperação de senha, contatos/CADASTUR, processamento de planilhas, indicadores calculados segundo metodologia do OTO, relatórios e auditoria. Formulários não alimentam automaticamente `ocupacao_fluxo` ou `diaria_media`.
+Inclui autenticação, gestão de usuários e senhas, inventário e complementos, formulários, importações CSV/XLSX com mapeamento, validação e preservação de origem, consultas analíticas, mapa, indicadores/ODS e exportações CSV/XLSX/PDF. Veja os detalhes e limites na [matriz de entrega](../docs/entrega-funcional.md).
 
-Para publicar, configure HTTPS, `COOKIE_SECURE=true` e `FRONTEND_ORIGIN` com a origem exata. 
+Testes adicionais dos módulos novos em ambiente descartável:
+
+```bash
+OTO_TEST_URL=http://localhost:8080/api OTO_TEST_ADMIN=seu-admin OTO_TEST_PASSWORD=sua-senha python3 scripts/complete_test.py
+```
+
+O script cria dados sintéticos e exige um ambiente de teste novo para suas asserções de totais. Não execute em banco real. Para publicar, configure HTTPS, `COOKIE_SECURE=true` e `FRONTEND_ORIGIN` com a origem exata. Não envie senhas, cookies ou arquivos de sessão ao GitHub.

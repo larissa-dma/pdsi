@@ -37,11 +37,12 @@ public class SecurityConfig {
   }
 
   @Bean
-  SecurityFilterChain security(HttpSecurity http, @Value("${oto.frontend-origin}") String origin)
+  SecurityFilterChain security(
+      HttpSecurity http, @Value("${oto.frontend-origin}") String origin, JdbcTemplate db)
       throws Exception {
     var cors = new CorsConfiguration();
     cors.setAllowedOrigins(List.of(origin));
-    cors.setAllowedMethods(List.of("GET", "POST", "PUT", "OPTIONS"));
+    cors.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
     cors.setAllowedHeaders(List.of("Content-Type", "X-XSRF-TOKEN"));
     cors.setAllowCredentials(true);
     var source = new UrlBasedCorsConfigurationSource();
@@ -65,7 +66,17 @@ public class SecurityConfig {
             f ->
                 f.loginProcessingUrl("/api/login")
                     .usernameParameter("identificador")
-                    .successHandler((req, res, auth) -> res.setStatus(204))
+                    .successHandler(
+                        (req, res, auth) -> {
+                          req.getSession()
+                              .setAttribute(
+                                  "oto.version",
+                                  db.queryForObject(
+                                      "SELECT versao_senha FROM usuario WHERE identificador=?",
+                                      Integer.class,
+                                      auth.getName()));
+                          res.setStatus(204);
+                        })
                     .failureHandler((req, res, e) -> res.sendError(401)))
         .logout(
             l ->
@@ -75,6 +86,9 @@ public class SecurityConfig {
             e ->
                 e.authenticationEntryPoint((req, res, ex) -> res.sendError(401))
                     .accessDeniedHandler((req, res, ex) -> res.sendError(403)));
+    http.addFilterAfter(
+        new AccountGuard(db),
+        org.springframework.security.web.access.intercept.AuthorizationFilter.class);
     return http.build();
   }
 }

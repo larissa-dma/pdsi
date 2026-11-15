@@ -36,12 +36,22 @@ public class InventoryController {
 
   @GetMapping("/registros")
   public List<Map<String, Object>> list(
-      @RequestParam(defaultValue = "") String busca, @RequestParam(defaultValue = "0") int pagina) {
+      @RequestParam(defaultValue = "") String busca,
+      @RequestParam(defaultValue = "0") int pagina,
+      @RequestParam(required = false) Long segmentoId,
+      @RequestParam(defaultValue = "") String situacao) {
     if (pagina < 0 || pagina > 1000000 || busca.length() > 200)
       throw new ResponseStatusException(BAD_REQUEST);
     return db.queryForList(
-        "SELECT * FROM registro_inventario WHERE nome ILIKE ? ORDER BY id LIMIT 50 OFFSET ?",
+        "SELECT r.* FROM registro_inventario r WHERE nome ILIKE ? AND (?::bigint IS NULL OR"
+            + " EXISTS(SELECT 1 FROM inventario_vinculo_segmento v WHERE v.registro_id=r.id AND"
+            + " v.segmento_id=?)) AND (?='' OR situacao_conferencia=?) ORDER BY id LIMIT 50 OFFSET"
+            + " ?",
         "%" + busca + "%",
+        segmentoId,
+        segmentoId,
+        situacao,
+        situacao,
         pagina * 50);
   }
 
@@ -66,7 +76,10 @@ public class InventoryController {
       @NotNull @Pattern(regexp = "estabelecimento|profissional|equipamento_publico|indefinido")
           String tipoCadastro,
       @DecimalMin("-90") @DecimalMax("90") BigDecimal latitude,
-      @DecimalMin("-180") @DecimalMax("180") BigDecimal longitude) {}
+      @DecimalMin("-180") @DecimalMax("180") BigDecimal longitude,
+      @Size(max = 10000) String descricao,
+      @Size(max = 10000) String razaoSocial,
+      @Pattern(regexp = "pendente|parcial|conferido|rejeitado") String situacaoConferencia) {}
 
   @PostMapping("/registros")
   @ResponseStatus(CREATED)
@@ -74,14 +87,18 @@ public class InventoryController {
     if ((r.latitude() == null) != (r.longitude() == null))
       throw new ResponseStatusException(BAD_REQUEST, "Informe as duas coordenadas");
     return db.queryForMap(
-        "INSERT INTO registro_inventario(nome,endereco,bairro,tipo_cadastro,latitude,longitude)"
-            + " VALUES (?,?,?,?,?,?) RETURNING *",
+        "INSERT INTO"
+            + " registro_inventario(nome,endereco,bairro,tipo_cadastro,latitude,longitude,descricao,razao_social,situacao_conferencia)"
+            + " VALUES (?,?,?,?,?,?,?,?,?) RETURNING *",
         r.nome(),
         r.endereco(),
         r.bairro(),
         r.tipoCadastro(),
         r.latitude(),
-        r.longitude());
+        r.longitude(),
+        r.descricao(),
+        r.razaoSocial(),
+        r.situacaoConferencia() == null ? "pendente" : r.situacaoConferencia());
   }
 
   @PutMapping("/registros/{id}/segmentos/{segmentoId}")
@@ -101,7 +118,7 @@ public class InventoryController {
     var rows =
         db.queryForList(
             "UPDATE registro_inventario SET"
-                + " nome=?,endereco=?,bairro=?,tipo_cadastro=?,latitude=?,longitude=?,data_ultima_revisao=now()"
+                + " nome=?,endereco=?,bairro=?,tipo_cadastro=?,latitude=?,longitude=?,descricao=?,razao_social=?,situacao_conferencia=COALESCE(?,situacao_conferencia),data_ultima_revisao=now()"
                 + " WHERE id=? RETURNING *",
             r.nome(),
             r.endereco(),
@@ -109,6 +126,9 @@ public class InventoryController {
             r.tipoCadastro(),
             r.latitude(),
             r.longitude(),
+            r.descricao(),
+            r.razaoSocial(),
+            r.situacaoConferencia(),
             id);
     if (rows.isEmpty()) throw new ResponseStatusException(NOT_FOUND);
     return rows.getFirst();
@@ -184,6 +204,12 @@ public class InventoryController {
             }
           }
         });
+  }
+
+  @DeleteMapping("/vinculos/{vinculoId}/respostas/{campoId}")
+  public void clear(@PathVariable long vinculoId, @PathVariable long campoId) {
+    db.update(
+        "DELETE FROM inventario_resposta WHERE vinculo_id=? AND campo_id=?", vinculoId, campoId);
   }
 
   @GetMapping("/registros/{id}/respostas")

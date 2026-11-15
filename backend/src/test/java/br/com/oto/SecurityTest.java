@@ -13,13 +13,23 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(
-    controllers = {AccessController.class, ManagementController.class},
+    controllers = {AccessController.class, ManagementController.class, AccountController.class},
     properties = "oto.frontend-origin=http://localhost:5173")
 @Import(SecurityConfig.class)
 class SecurityTest {
   @Autowired MockMvc mvc;
   @MockitoBean JdbcTemplate db;
   @MockitoBean CurrentUser users;
+
+  @org.junit.jupiter.api.BeforeEach
+  void activeAccount() {
+    org.mockito.Mockito.when(
+            db.queryForList(
+                org.mockito.ArgumentMatchers.eq(
+                    "SELECT ativo,versao_senha FROM usuario WHERE identificador=?"),
+                org.mockito.ArgumentMatchers.any(Object.class)))
+        .thenReturn(java.util.List.of(java.util.Map.of("ativo", true)));
+  }
 
   @Test
   void anonymousCannotRead() throws Exception {
@@ -44,5 +54,18 @@ class SecurityTest {
   void writesRequireCsrf() throws Exception {
     mvc.perform(post("/api/secretaria/usuarios").contentType("application/json").content("{}"))
         .andExpect(status().isForbidden());
+  }
+
+  @Test
+  @WithMockUser(roles = "SECRETARIA")
+  void accountStateRequiresExplicitBoolean() throws Exception {
+    mvc.perform(
+            put("/api/secretaria/usuarios/2/estado")
+                .with(
+                    org.springframework.security.test.web.servlet.request
+                        .SecurityMockMvcRequestPostProcessors.csrf())
+                .contentType("application/json")
+                .content("{}"))
+        .andExpect(status().isBadRequest());
   }
 }

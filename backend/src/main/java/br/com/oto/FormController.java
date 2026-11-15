@@ -83,7 +83,12 @@ public class FormController {
   public List<Map<String, Object>> all(@RequestParam(defaultValue = "0") int pagina) {
     if (pagina < 0 || pagina > 1000000) throw new ResponseStatusException(BAD_REQUEST);
     return db
-        .queryForList("SELECT * FROM formulario ORDER BY id DESC LIMIT 50 OFFSET ?", pagina * 50)
+        .queryForList(
+            "SELECT f.*, (SELECT count(*) FROM formulario_resposta r WHERE r.formulario_id=f.id AND"
+                + " r.status='enviado') AS enviadas, (SELECT count(DISTINCT estabelecimento_id)"
+                + " FROM usuario WHERE ativo AND perfil='HOSPEDAGEM' AND estabelecimento_id IS NOT"
+                + " NULL) AS publico FROM formulario f ORDER BY f.id DESC LIMIT 50 OFFSET ?",
+            pagina * 50)
         .stream()
         .map(this::normalize)
         .toList();
@@ -95,12 +100,22 @@ public class FormController {
     if (pagina < 0 || pagina > 1000000) throw new ResponseStatusException(BAD_REQUEST);
     return db
         .queryForList(
-            "SELECT * FROM formulario_resposta WHERE formulario_id=? ORDER BY id LIMIT 50 OFFSET ?",
+            "SELECT r.*,e.nome AS estabelecimento FROM formulario_resposta r JOIN"
+                + " registro_inventario e ON e.id=r.estabelecimento_id WHERE formulario_id=? ORDER"
+                + " BY r.id LIMIT 50 OFFSET ?",
             id,
             pagina * 50)
         .stream()
         .map(this::normalize)
         .toList();
+  }
+
+  record Deadline(@NotNull @FutureOrPresent LocalDate prazo) {}
+
+  @PutMapping("/secretaria/formularios/{id}/prazo")
+  public void deadline(@PathVariable long id, @Valid @RequestBody Deadline value) {
+    if (db.update("UPDATE formulario SET prazo=? WHERE id=?", value.prazo(), id) == 0)
+      throw new ResponseStatusException(NOT_FOUND);
   }
 
   @GetMapping("/formularios")
