@@ -1,6 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { api, login as apiLogin, logout as apiLogout } from './client';
-import type { Usuario } from './client';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+import { api, login as apiLogin, logout as apiLogout } from "./client";
+import type { Usuario } from "./client";
 
 interface AuthState {
   usuario: Usuario | null;
@@ -16,15 +22,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
-    api.get<Usuario>('/me')
+    api
+      .get<Usuario>("/me")
       .then(setUsuario)
       .catch(() => setUsuario(null))
       .finally(() => setCarregando(false));
   }, []);
 
+  useEffect(() => {
+    const expired = () => {
+      setUsuario(null);
+    };
+    window.addEventListener("oto:unauthorized", expired);
+    return () => window.removeEventListener("oto:unauthorized", expired);
+  }, []);
+
   const entrar = useCallback(async (identificador: string, senha: string) => {
     await apiLogin(identificador, senha);
-    const me = await api.get<Usuario>('/me');
+    const me = await api.get<Usuario>("/me");
     setUsuario(me);
   }, []);
 
@@ -42,6 +57,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth(): AuthState {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth deve ser usado dentro de AuthProvider');
+  if (!ctx) throw new Error("useAuth deve ser usado dentro de AuthProvider");
   return ctx;
 }

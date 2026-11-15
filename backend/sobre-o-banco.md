@@ -20,11 +20,26 @@ Esta lista documenta a configuração realizada e exemplos, não é uma consulta
 
 | Identificador | Situação | Perfil | Vínculo |
 | --- | --- | --- | --- |
+| `secretaria@oto.local` | Conta de teste criada no banco local | `SECRETARIA` | Sem estabelecimento (`null`) |
+| `hospedagem@oto.local` | Conta de teste criada no banco local | `HOSPEDAGEM` | Cadastro fictício `1011` |
 | `admin@oto.local` | Criado no ambiente local durante a configuração | `SECRETARIA` | Sem estabelecimento (`null`) |
 | `hospedagem@exemplo.invalid` | Exemplo do README; só existe se o passo de criação for executado | `HOSPEDAGEM` | Registro fictício `1011`, se o seed foi carregado |
 | `operador@exemplo.invalid` | Presente no seed antigo `001_demo.sql`, não carregado no caminho atual | Padrão de V4: `HOSPEDAGEM` | Sem vínculo e sem senha; não é um login utilizável |
 
-Não há senha padrão. Cada pessoa escolhe a senha ao criar o administrador ou outro usuário. As senhas são armazenadas como hash BCrypt em `senha_hash`, nunca como texto legível. Login exige usuário ativo e hash de senha preenchido. Trocar variáveis `ADMIN_*` não redefine senha existente. Recuperação/alteração de senha ainda não possui endpoint próprio.
+Não há senha padrão. Cada pessoa escolhe a senha ao criar o administrador ou outro usuário. As senhas são armazenadas como hash BCrypt em `senha_hash`, nunca como texto legível. Login exige usuário ativo e hash de senha preenchido. Trocar variáveis `ADMIN_*` não redefine senha existente. A troca da própria senha usa `PUT /api/me/senha`; a Secretaria redefine senhas em `PUT /api/secretaria/usuarios/{id}/senha`. A recuperação por e-mail não está implementada. As sessões são invalidadas na próxima requisição após troca/redefinição ou desativação.
+
+## Contas de teste para a equipe
+
+Acesse http://localhost:5173/login com uma das contas abaixo:
+
+| Perfil | Login | Senha inicial |
+| --- | --- | --- |
+| **Secretaria** | `secretaria@oto.local` | `Oto-O536MjGrk2mNK-QT` |
+| **Hospedagem** | `hospedagem@oto.local` | `Oto-uvg1mEEXI6jnu3ZR` |
+
+Estas credenciais de demonstração foram registradas na documentação por decisão da responsável pelo repositório privado. As duas contas já foram criadas no banco local usado durante o desenvolvimento; clonar o repositório não copia esse banco nem cria essas contas automaticamente. Em outro ambiente, crie-as pela interface **Usuários e acessos**, após configurar o primeiro administrador. A conta de Hospedagem está vinculada ao cadastro fictício **1011 — Meios de hospedagem 01**; em outro banco, escolha o cadastro correspondente do segmento hospedagem.
+
+Secretaria administra os módulos do sistema. Hospedagem preenche os formulários do estabelecimento vinculado. A conta `admin@oto.local` continua existindo separadamente, com a senha escolhida na configuração. As senhas das contas permanecem como hash BCrypt no PostgreSQL; a tabela acima documenta apenas as credenciais de teste.
 
 ## Tipos de acesso
 
@@ -63,9 +78,10 @@ Essa consulta não mostra hashes nem senhas. Para criar usuários pelo sistema, 
 | Origem e cargas | `fonte_dados`, `conjunto_pesquisa`, `importacao`, `erro_importacao` |
 | Dados analíticos | `ocupacao_fluxo`, `diaria_media`, `demanda_turistica`, `controle_pesquisa` |
 | Indicadores/relatórios | `indicador`, `observacao_indicador`, `ods`, `indicador_ods`, `relatorio`, `exportacao`, `relatorio_lote` |
+| Operação e fontes externas | `importacao_previa`, `importacao_linha`, `observacao_externa`, `auditoria` |
 | Histórico de migrações | `flyway_schema_history` |
 
-Flyway aplica V1–V4 na inicialização do backend. V1–V3 reproduzem os arquivos originais de `database/db/migrations`; V4 adiciona autenticação e formulários. O catálogo inicial contém 9 segmentos e 1.050 campos, incluindo 153 posições auxiliares. Metadados não equivalem a empresas cadastradas.
+Flyway aplica V1–V6 na inicialização do backend. V1–V3 reproduzem os arquivos originais de `database/db/migrations`; V4 adiciona autenticação e formulários; V5 adiciona operação/auditoria/versão de senha; V6 preserva linhas originais dos novos lotes e observações de bases externas. O catálogo inicial contém 9 segmentos e 1.050 campos, incluindo 153 posições auxiliares. Metadados não equivalem a empresas cadastradas.
 
 O seed `002_demo_inventario.sql` cria 19 registros fictícios e 20 vínculos. Não cria usuários, formulários nem importações. O painel pode mostrar 19 registros e zero nos outros contadores. Datas, nomes e respostas do seed não representam dados reais da Prefeitura. Valores ausentes não devem virar zero ou falso automaticamente.
 

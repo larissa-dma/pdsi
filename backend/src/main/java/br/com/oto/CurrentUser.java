@@ -19,8 +19,9 @@ public class CurrentUser {
   public Map<String, Object> get(Principal p) {
     var rows =
         db.queryForList(
-            "SELECT id,nome,identificador,perfil,estabelecimento_id FROM usuario WHERE"
-                + " identificador=? AND ativo=true",
+            "SELECT u.id,u.nome,u.identificador,u.perfil,u.estabelecimento_id,r.nome AS"
+                + " estabelecimento_nome FROM usuario u LEFT JOIN registro_inventario r ON"
+                + " r.id=u.estabelecimento_id WHERE u.identificador=? AND u.ativo=true",
             p.getName());
     if (rows.isEmpty()) throw new ResponseStatusException(UNAUTHORIZED);
     return rows.getFirst();

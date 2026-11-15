@@ -124,3 +124,13 @@ GROUP BY r.id, r.nome HAVING COUNT(DISTINCT s.id)>1;
 10. O seed é **100% fictício** e não deve ser confundido com a origem. Nome, coordenadas e documentações do seed são exemplos artificiais, NÃO observações reais.
 
 Fontes: material fornecido pelo Daniel em 09/10/2026 (dicionário HTML, relatório de estrutura PDF e Excel do inventário). Modelagem anterior no Figma: https://www.figma.com/design/0OqnmHVvJakoG8gGGZkNe6/Observat%C3%B3rio-de-Turismo-de-Ol%C3%ADmpia?node-id=12-2574
+
+## Evolução operacional do backend
+
+As migrações V5 e V6 do backend acrescentam controle de prévias, auditoria, versão de senha, linhas originais e observações externas. Elas são aplicadas automaticamente na próxima inicialização da API, preservando as tabelas e os dados existentes. Não estão duplicadas em `database/db/migrations`; nessa pasta permanecem os scripts originais V1–V3.
+
+Veja [escopo e migrações da entrega](../docs/entrega-funcional.md). Para confirmar o histórico após iniciar a API:
+
+```bash
+psql -d oto -P pager=off -c 'SELECT version,description,success FROM flyway_schema_history ORDER BY installed_rank;'
+```

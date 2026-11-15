@@ -1,5 +1,5 @@
-import { api } from './client';
-import type { Usuario } from './client';
+import { api } from "./client";
+import type { Usuario } from "./client";
 
 export interface Painel {
   registros_inventario: number;
@@ -14,7 +14,7 @@ export interface Formulario {
   referencia: string;
   prazo: string;
   /** 'pendente' = disponível, 'rascunho' = em andamento, 'enviado' = enviado */
-  status?: 'pendente' | 'rascunho' | 'enviado';
+  status?: "pendente" | "rascunho" | "enviado";
 }
 
 export interface RegistroInventario {
@@ -26,20 +26,23 @@ export interface RegistroInventario {
   latitude: number | null;
   longitude: number | null;
   categoria_id: number | null;
-  situacao_conferencia: 'pendente' | 'parcial' | 'conferido' | 'rejeitado';
+  situacao_conferencia: "pendente" | "parcial" | "conferido" | "rejeitado";
 }
 
 export const auth = {
-  me: () => api.get<Usuario>('/me'),
+  me: () => api.get<Usuario>("/me"),
 };
 
 export const secretaria = {
-  painel: () => api.get<Painel>('/secretaria/painel'),
-  formularios: () => api.get<Formulario[]>('/secretaria/formularios'),
+  painel: () => api.get<Painel>("/secretaria/painel"),
+  formularios: () => api.get<Formulario[]>("/secretaria/formularios"),
   registros: (busca?: string, pagina = 0) =>
-    api.get<RegistroInventario[]>(`/secretaria/inventario/registros?busca=${busca ?? ''}&pagina=${pagina}`),
+    api.get<RegistroInventario[]>(
+      `/secretaria/inventario/registros?busca=${encodeURIComponent(busca ?? "")}&pagina=${pagina}`,
+    ),
 };
 
 export const hospedagem = {
-  formularios: () => api.get<Formulario[]>('/formularios'),
+  formularios: (pagina = 0) =>
+    api.get<Formulario[]>(`/formularios?pagina=${pagina}`),
 };

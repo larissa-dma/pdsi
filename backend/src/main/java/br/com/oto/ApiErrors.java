@@ -8,6 +8,19 @@ import org.springframework.web.bind.annotation.*;
 
 @RestControllerAdvice
 public class ApiErrors {
+  @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+  public org.springframework.http.ResponseEntity<Map<String, String>> domain(
+      org.springframework.web.server.ResponseStatusException e) {
+    return org.springframework.http.ResponseEntity.status(e.getStatusCode())
+        .body(Map.of("erro", e.getReason() == null ? "Requisição não permitida" : e.getReason()));
+  }
+
+  @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+  @ResponseStatus(org.springframework.http.HttpStatus.PAYLOAD_TOO_LARGE)
+  public Map<String, String> tooLarge() {
+    return Map.of("erro", "Arquivo excede o limite de 10 MB");
+  }
+
   @ExceptionHandler(org.springframework.jdbc.UncategorizedSQLException.class)
   @ResponseStatus(org.springframework.http.HttpStatus.BAD_REQUEST)
   public Map<String, String> typed() {

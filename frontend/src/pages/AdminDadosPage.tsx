@@ -1,102 +1,308 @@
-import { useResponsive } from '../hooks/useResponsive';
-
-const DATASETS = [
-  { titulo: 'Ocupação Hoteleira', periodo: 'Jan–Dez 2025', respostas: 24, total: 31, pct: 77 },
-  { titulo: 'Fluxo de Visitantes', periodo: 'T3 2025', respostas: 18, total: 20, pct: 90 },
-  { titulo: 'Perfil do Turista', periodo: 'Ago 2025', respostas: 11, total: 25, pct: 44 },
-  { titulo: 'Satisfação Geral', periodo: 'Set 2025', respostas: 32, total: 32, pct: 100 },
+import { useState } from "react";
+import { api } from "../api/client";
+import {
+  Page,
+  Card,
+  Table,
+  State,
+  Field,
+  Message,
+  useData,
+  Pagination,
+  today,
+} from "../components/Workspace";
+import type { Row } from "../components/Workspace";
+const types = [
+  ["texto", "Texto"],
+  ["inteiro", "Inteiro"],
+  ["decimal", "Decimal"],
+  ["percentual", "Percentual (0–100)"],
+  ["booleano", "Sim/Não"],
 ];
-
-const AGREGADOS = [
-  { indicador: 'Taxa de ocupação média', valor: '78%', periodo: 'Jan–Set 2025', fonte: 'Ocupação Hoteleira' },
-  { indicador: 'Fluxo total estimado', valor: '142.800', periodo: 'Jan–Set 2025', fonte: 'Fluxo de Visitantes' },
-  { indicador: 'Duração média da estadia', valor: '3,2 dias', periodo: 'T2 2025', fonte: 'Perfil do Turista' },
-  { indicador: 'NPS setorial', valor: '72', periodo: 'Set 2025', fonte: 'Satisfação Geral' },
-];
-
 export default function AdminDadosPage() {
-  const { isMobile } = useResponsive();
-
+  const [page, setPage] = useState(0);
+  const { data, error, loading, reload } = useData(
+    () => api.get<Row[]>(`/secretaria/formularios?pagina=${page}`),
+    [page],
+  );
+  const [title, setTitle] = useState(""),
+    [reference, setReference] = useState(""),
+    [deadline, setDeadline] = useState(""),
+    [questions, setQuestions] = useState<Row[]>([
+      {
+        chave: "ocupacao",
+        titulo: "Taxa de ocupação (%)",
+        tipo: "percentual",
+        obrigatoria: true,
+      },
+    ]);
+  const [busy, setBusy] = useState(false),
+    [failure, setFailure] = useState(""),
+    [message, setMessage] = useState(""),
+    [selected, setSelected] = useState<Row | null>(null),
+    [answerPage, setAnswerPage] = useState(0),
+    [newDeadline, setNewDeadline] = useState("");
+  const datasets = useData(() => api.get<Row[]>("/secretaria/pesquisas"));
+  const responses = useData(
+    () =>
+      selected
+        ? api.get<Row[]>(
+            `/secretaria/formularios/${selected.id}/respostas?pagina=${answerPage}`,
+          )
+        : Promise.resolve([]),
+    [selected?.id, answerPage],
+  );
+  function question(i: number, key: string, value: unknown) {
+    setQuestions((v) =>
+      v.map((q, n) => (n === i ? { ...q, [key]: value } : q)),
+    );
+  }
+  async function create(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setFailure("");
+    setMessage("");
+    try {
+      await api.post("/secretaria/formularios", {
+        titulo: title,
+        referencia: reference,
+        prazo: deadline,
+        perguntas: questions,
+      });
+      setTitle("");
+      setReference("");
+      setMessage("Formulário criado e disponível às hospedagens vinculadas.");
+      reload();
+    } catch (e) {
+      setFailure((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function extend(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selected) return;
+    setBusy(true);
+    setFailure("");
+    try {
+      await api.put(`/secretaria/formularios/${selected.id}/prazo`, {
+        prazo: newDeadline,
+      });
+      setMessage("Prazo atualizado.");
+      reload();
+    } catch (e) {
+      setFailure((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      <div>
-        <h1 style={{ margin: '0 0 4px', fontSize: isMobile ? '18px' : '20px', fontWeight: 700, color: 'var(--navy-800)' }}>
-          Administração dos Dados de Pesquisas
-        </h1>
-        <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)' }}>
-          Gestão e consolidação das bases de dados coletadas
-        </p>
-      </div>
-
-      {/* Grid de datasets */}
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '16px' }}>
-        {DATASETS.map(ds => (
-          <div key={ds.titulo} style={{
-            background: '#fff', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px 22px',
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-              <div>
-                <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--navy-800)' }}>{ds.titulo}</div>
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{ds.periodo}</div>
-              </div>
-              <span style={{
-                background: ds.pct === 100 ? 'var(--status-sent-bg)' : 'var(--status-available-bg)',
-                color: ds.pct === 100 ? 'var(--status-sent-fg)' : 'var(--status-available-fg)',
-                borderRadius: '20px', padding: '3px 10px', fontSize: '12px', fontWeight: 600,
-              }}>
-                {ds.pct}%
-              </span>
-            </div>
-
-            <div style={{ marginBottom: '10px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '5px' }}>
-                <span>Respostas recebidas</span>
-                <span style={{ fontWeight: 600, color: 'var(--navy-800)' }}>{ds.respostas}/{ds.total}</span>
-              </div>
-              <div style={{ height: '6px', background: 'var(--border)', borderRadius: '3px', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${ds.pct}%`, background: ds.pct === 100 ? 'var(--status-sent-fg)' : 'var(--cyan-700)', borderRadius: '3px' }} />
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button style={{ flex: 1, padding: '7px', border: '1px solid var(--border)', borderRadius: '7px', fontSize: '12px', fontWeight: 500, background: '#fff', color: 'var(--text-mid)' }}>
-                Ver respostas
-              </button>
-              <button style={{ flex: 1, padding: '7px', border: 'none', borderRadius: '7px', fontSize: '12px', fontWeight: 500, background: 'var(--navy-500)', color: '#fff' }}>
-                Exportar
-              </button>
-            </div>
+    <Page
+      title="Pesquisas e formulários"
+      description="Crie pesquisas, acompanhe a coleta e consulte respostas salvas."
+    >
+      <Message error={failure} success={message} />
+      <Card title="Nova pesquisa">
+        <form className="stack" onSubmit={create}>
+          <div className="field-grid">
+            <Field label="Título">
+              <input
+                required
+                maxLength={200}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+            </Field>
+            <Field label="Referência">
+              <input
+                required
+                maxLength={50}
+                placeholder="2026-11"
+                value={reference}
+                onChange={(e) => setReference(e.target.value)}
+              />
+            </Field>
+            <Field label="Prazo">
+              <input
+                required
+                type="date"
+                min={today()}
+                value={deadline}
+                onChange={(e) => setDeadline(e.target.value)}
+              />
+            </Field>
           </div>
-        ))}
-      </div>
-
-      {/* Dados agregados */}
-      <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden' }}>
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', fontWeight: 600, fontSize: '14px', color: 'var(--navy-800)' }}>
-          Indicadores agregados
-        </div>
-        <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '400px' }}>
-          <thead>
-            <tr style={{ background: '#F5F9FC' }}>
-              {['Indicador', 'Valor', 'Período', 'Fonte'].map(col => (
-                <th key={col} style={{ padding: '10px 16px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)' }}>{col}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {AGREGADOS.map((r, i) => (
-              <tr key={r.indicador} style={{ borderTop: i > 0 ? '1px solid var(--border)' : 'none' }}>
-                <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 500, color: 'var(--navy-800)' }}>{r.indicador}</td>
-                <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700, color: 'var(--cyan-700)' }}>{r.valor}</td>
-                <td style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-mid)' }}>{r.periodo}</td>
-                <td style={{ padding: '12px 16px', fontSize: '12px', color: 'var(--text-muted)' }}>{r.fonte}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        </div>
-      </div>
-    </div>
+          {questions.map((q, i) => (
+            <div key={i} className="work-card stack">
+              <div className="field-grid">
+                <Field label="Chave técnica (única)">
+                  <input
+                    required
+                    pattern="[a-z][a-z0-9_]{0,49}"
+                    value={q.chave}
+                    onChange={(e) => question(i, "chave", e.target.value)}
+                  />
+                </Field>
+                <Field label="Pergunta">
+                  <input
+                    required
+                    maxLength={300}
+                    value={q.titulo}
+                    onChange={(e) => question(i, "titulo", e.target.value)}
+                  />
+                </Field>
+                <Field label="Tipo">
+                  <select
+                    value={q.tipo}
+                    onChange={(e) => question(i, "tipo", e.target.value)}
+                  >
+                    {types.map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              </div>
+              <div className="actions">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={q.obrigatoria}
+                    onChange={(e) =>
+                      question(i, "obrigatoria", e.target.checked)
+                    }
+                  />{" "}
+                  Obrigatória no envio
+                </label>
+                <button
+                  className="button secondary"
+                  type="button"
+                  disabled={questions.length === 1}
+                  onClick={() =>
+                    setQuestions((v) => v.filter((_, n) => n !== i))
+                  }
+                >
+                  Remover pergunta
+                </button>
+              </div>
+            </div>
+          ))}
+          <div className="actions">
+            <button
+              className="button secondary"
+              type="button"
+              disabled={questions.length >= 100}
+              onClick={() =>
+                setQuestions((v) => [
+                  ...v,
+                  {
+                    chave: `pergunta_${v.length + 1}`,
+                    titulo: "",
+                    tipo: "texto",
+                    obrigatoria: false,
+                  },
+                ])
+              }
+            >
+              Adicionar pergunta
+            </button>
+            <button className="button" disabled={busy}>
+              {busy ? "Salvando…" : "Publicar formulário"}
+            </button>
+          </div>
+        </form>
+      </Card>
+      <Card title="Conjuntos importados">
+        <State loading={datasets.loading} error={datasets.error} />
+        <Table
+          rows={datasets.data ?? []}
+          columns={[
+            { key: "nome", label: "Conjunto" },
+            { key: "codigo", label: "Código" },
+            { key: "lotes", label: "Cargas" },
+          ]}
+        />
+      </Card>
+      <State {...{ loading, error }} />
+      <Card title="Acompanhamento da coleta">
+        <Table
+          rows={data ?? []}
+          columns={[
+            { key: "titulo", label: "Pesquisa" },
+            { key: "referencia", label: "Referência" },
+            { key: "prazo", label: "Prazo" },
+            { key: "enviadas", label: "Enviadas" },
+            { key: "publico", label: "Hospedagens com acesso" },
+            {
+              key: "action",
+              label: "Ações",
+              render: (r) => (
+                <button
+                  className="button secondary"
+                  onClick={() => {
+                    setSelected(r);
+                    setAnswerPage(0);
+                    setNewDeadline(r.prazo);
+                  }}
+                >
+                  Ver respostas / prazo
+                </button>
+              ),
+            },
+          ]}
+        />
+        <Pagination page={page} setPage={setPage} more={data?.length === 50} />
+      </Card>
+      {selected && (
+        <Card title={`Respostas — ${selected.titulo}`}>
+          <form className="actions" onSubmit={extend}>
+            <Field label="Prorrogar prazo">
+              <input
+                type="date"
+                min={today()}
+                required
+                value={newDeadline}
+                onChange={(e) => setNewDeadline(e.target.value)}
+              />
+            </Field>
+            <button className="button secondary" disabled={busy}>
+              Atualizar prazo
+            </button>
+            <button
+              type="button"
+              className="button secondary"
+              onClick={async () => {
+                try {
+                  await api.download(
+                    "/secretaria/relatorios/exportar?tipo=formularios&formato=csv",
+                    "oto-formularios.csv",
+                  );
+                } catch (e) {
+                  setFailure((e as Error).message);
+                }
+              }}
+            >
+              Exportar todos os formulários (CSV)
+            </button>
+          </form>
+          <State loading={responses.loading} error={responses.error} />
+          <Table
+            rows={responses.data ?? []}
+            columns={[
+              { key: "estabelecimento", label: "Hospedagem" },
+              { key: "status", label: "Status" },
+              { key: "respostas", label: "Respostas" },
+              { key: "enviado_em", label: "Envio" },
+            ]}
+          />
+          <Pagination
+            page={answerPage}
+            setPage={setAnswerPage}
+            more={responses.data?.length === 50}
+          />
+        </Card>
+      )}
+    </Page>
   );
 }
