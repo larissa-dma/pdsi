@@ -1,0 +1,33 @@
+# Carrega os seeds automaticamente depois que a API terminar as migrações (Flyway).
+# Uso (na pasta raiz, onde está o compose.yml):
+#   docker compose -f compose.yml -f compose.seed.yml up -d --build
+# Coloque 002, 003, 004, 005 e 006 em database/db/seeds/.
+# O serviço roda uma vez e termina; se o banco já tem inventário, não faz nada.
+services:
+  seed:
+    image: postgres:17
+    depends_on:
+      - db
+      - api
+    restart: "no"
+    environment:
+      PGPASSWORD: ${DATABASE_PASSWORD}
+    volumes:
+      - ./database/db/seeds:/seeds:ro
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        P="psql -h db -U oto_app -d oto -v ON_ERROR_STOP=1 -q -tA"
+        echo "seed: aguardando migrações..."
+        for i in $$(seq 1 90); do
+          ok=$$($$P -c "select 1 from flyway_schema_history where version='6' and success" 2>/dev/null)
+          [ "$$ok" = "1" ] && break
+          sleep 2
+        done
+        [ "$$ok" = "1" ] || { echo "seed: migrações não terminaram"; exit 1; }
+        n=$$($$P -c "select count(*) from inventario_vinculo_segmento")
+        if [ "$$n" != "0" ]; then echo "seed: banco já tem inventário, nada a fazer"; exit 0; fi
+        for f in 002_demo_inventario 003_demo_inventario_ampliado 004_demo_series_analiticas 005_demo_indicadores_ods 006_demo_formularios_respostas; do
+          if [ -f "/seeds/$$f.sql" ]; then echo "seed: $$f"; $$P -f "/seeds/$$f.sql" >/dev/null; fi
+        done
+        echo "seed: concluído"
