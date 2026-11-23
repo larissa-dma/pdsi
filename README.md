@@ -116,3 +116,11 @@ docker compose logs -f api
 Depois da inicialização, abra http://localhost:8081/login. Esse Compose cria outro banco em volume próprio; não importa automaticamente os dados do PostgreSQL local. Não apague volumes para atualizar. Em publicação externa, configure domínio/HTTPS, senhas apropriadas, `COOKIE_SECURE=true` e a origem exata do frontend. A porta está limitada ao acesso local nesta configuração de demonstração. A implantação definitiva deve ser validada na infraestrutura de homologação.
 
 Os dados de demonstração são inteiramente fictícios. As migrações carregam metadados (9 segmentos e 1.050 campos), mas não carregam os 19 cadastros fictícios automaticamente. Cada ambiente deve seguir os guias de seeds e conexão.
+
+## Créditos BSI - 2026.2
+- Luis Henrique
+- Luiz Eduardo 
+- Katiely Feitosa 
+- Larissa Andrade
+- Bianca Goncalves 
+- Grazielle Tomaz 
