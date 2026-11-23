@@ -244,25 +244,31 @@ public class ImportController {
   Map<String, Object> normalize(String type, Map<String, String> row) {
     Map<String, Object> result = new LinkedHashMap<>();
     if (type.equals("inventario")) {
-      result.put("nome", required(row, "nome", 200));
-      result.put("endereco", text(row, "endereco"));
-      result.put("bairro", text(row, "bairro"));
+      String name = Names.clean(required(row, "nome", 200));
+      String address = Names.clean(text(row, "endereco"));
+      String district = Names.clean(text(row, "bairro"));
+      result.put("nome", name);
+      result.put("endereco", address);
+      result.put("bairro", district);
       result.put("descricao", text(row, "descricao"));
-      if (text(row, "endereco").length() > 255 || text(row, "bairro").length() > 120)
+      if (address.length() > 255 || district.length() > 120)
         throw new IllegalArgumentException("Endereço ou bairro muito longo");
-      String segment = required(row, "segmento", 40);
+      String segment = Names.code(required(row, "segmento", 40));
       var seg = db.queryForList("SELECT id FROM inventario_segmento WHERE codigo=?", segment);
-      if (seg.isEmpty()) throw new IllegalArgumentException("Código de segmento desconhecido");
+      if (seg.isEmpty())
+        throw new IllegalArgumentException("Código de segmento desconhecido: " + segment);
       result.put("segmento_id", seg.getFirst().get("id"));
-      if (Boolean.TRUE.equals(
-          db.queryForObject(
-              "SELECT EXISTS(SELECT 1 FROM registro_inventario r JOIN inventario_vinculo_segmento v"
-                  + " ON v.registro_id=r.id WHERE lower(trim(r.nome))=lower(trim(?)) AND"
-                  + " v.segmento_id=?)",
-              Boolean.class,
-              result.get("nome"),
-              result.get("segmento_id"))))
-        throw new IllegalArgumentException("Nome já existe no segmento");
+      var existing =
+          db.queryForList(
+              "SELECT r.id FROM registro_inventario r JOIN inventario_vinculo_segmento v ON"
+                  + " v.registro_id=r.id WHERE "
+                  + Names.sqlKey("r.nome")
+                  + "=? AND v.segmento_id=? LIMIT 1",
+              Names.key(name),
+              result.get("segmento_id"));
+      if (!existing.isEmpty())
+        throw new IllegalArgumentException(
+            "Nome já existe no segmento (cadastro " + existing.getFirst().get("id") + ")");
       var lat = text(row, "latitude");
       var lon = text(row, "longitude");
       if (lat.isBlank() != lon.isBlank())
@@ -288,7 +294,7 @@ public class ImportController {
         throw new IllegalArgumentException("Estabelecimento não encontrado");
       result.put("estabelecimento_id", establishment);
       if (type.equals("ocupacao")) {
-        String mode = required(row, "tipo_dado", 20);
+        String mode = Names.code(required(row, "tipo_dado", 20));
         if (!Set.of("consolidado", "expectativa").contains(mode))
           throw new IllegalArgumentException("tipo_dado: use consolidado ou expectativa");
         result.put("tipo_dado", mode);
@@ -305,6 +311,27 @@ public class ImportController {
         if (value == null) throw new IllegalArgumentException("valor é obrigatório");
         result.put("valor", value);
       }
+      if (establishment != null) {
+        String table = type.equals("ocupacao") ? "ocupacao_fluxo" : "diaria_media";
+        String sameMode = type.equals("ocupacao") ? " AND tipo_dado=?" : "";
+        Object[] args =
+            type.equals("ocupacao")
+                ? new Object[] {establishment, result.get("mes_referencia"), result.get("tipo_dado")}
+                : new Object[] {establishment, result.get("mes_referencia")};
+        var previous =
+            db.queryForList(
+                "SELECT lote_id FROM "
+                    + table
+                    + " WHERE estabelecimento_id=? AND mes_referencia=?::date"
+                    + sameMode
+                    + " LIMIT 1",
+                args);
+        if (!previous.isEmpty())
+          throw new IllegalArgumentException(
+              "Já existe dado deste estabelecimento para o mês (lote "
+                  + previous.getFirst().get("lote_id")
+                  + ")");
+      }
     } else if (type.equals("demanda")) {
       result.put("referencia", required(row, "referencia", 50));
       String uf = text(row, "origem_uf").toUpperCase(Locale.ROOT);
@@ -317,9 +344,9 @@ public class ImportController {
       result.put("origem_uf", uf.isBlank() ? null : uf);
     } else if (Set.of("issqn", "caged", "veiculos", "fretamento").contains(type)) {
       result.put("mes_referencia", month(row));
-      result.put("medida", required(row, "medida", 100));
-      result.put("unidade", required(row, "unidade", 60));
-      result.put("recorte", text(row, "recorte"));
+      result.put("medida", Names.clean(required(row, "medida", 100)));
+      result.put("unidade", Names.clean(required(row, "unidade", 60)));
+      result.put("recorte", Names.clean(text(row, "recorte")));
       String raw = required(row, "valor", 30);
       BigDecimal value = new BigDecimal(raw.replace(',', '.'));
       if (value.precision() - value.scale() > 14 || value.scale() > 4)
@@ -357,7 +384,7 @@ public class ImportController {
         var normalized = normalize(mapping.tipo(), row);
         String duplicate =
             mapping.tipo().equals("inventario")
-                ? normalized.get("nome").toString().trim().toLowerCase(Locale.ROOT)
+                ? Names.key(normalized.get("nome").toString())
                     + ":"
                     + normalized.get("segmento_id")
                 : encode(normalized);

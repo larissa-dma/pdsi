@@ -48,7 +48,10 @@ try {
     );
   }
   await page.goto(base + "/secretaria/inventario/novo");
-  await page.getByLabel("Nome", { exact: true }).fill("Browser Test Hotel");
+  // Nome único: o QUAL-01 bloqueia nomes repetidos no mesmo segmento.
+  await page
+    .getByLabel("Nome", { exact: true })
+    .fill("Browser Test Hotel " + Date.now());
   await page
     .getByLabel("Descrição", { exact: true })
     .fill("Descrição pelo navegador");
@@ -158,6 +161,57 @@ try {
   await page.getByLabel("Nome",{exact:true}).fill(importedName);
   await page.getByRole("button",{name:"Buscar",exact:true}).click();
   await page.getByRole("cell",{name:importedName,exact:true}).waitFor();
+  // TST-02: arquivo de ocupação → validação com pendência → banco → API →
+  // tela de Ocupação → Visão geral. O mês é único por execução para que os
+  // números conferidos no dashboard venham só deste arquivo.
+  const year = 2200 + (Math.floor(Date.now() / 1000) % 7000);
+  const month = `${year}-01`;
+  const occupancyFile = `ocupacao-e2e-${year}.csv`;
+  await page.goto(base + "/secretaria/importacao");
+  // O nome acessível do <select> dentro do <label> inclui a opção atual
+  // ("Conjunto inventario"), por isso a busca é pelo início do texto.
+  await page.getByLabel(/^Conjunto/).selectOption("ocupacao");
+  await page.getByLabel("Referência do lote", { exact: true }).fill(month);
+  await page.locator("input[type=file]").setInputFiles({
+    name: occupancyFile,
+    mimeType: "text/csv",
+    buffer: Buffer.from(
+      "mes_referencia;ocupacao_percentual;fluxo_pessoas;tipo_dado\n" +
+        `${month};65.5;120;CONSOLIDADO\n` +
+        `${month};101;5;consolidado\n`,
+    ),
+  });
+  await page.getByRole("button", { name: "Ler arquivo", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Validar mapeamento", exact: true })
+    .click();
+  await page.getByText("1 válidas de 2 linhas.").waitFor();
+  await page
+    .getByRole("cell", { name: "ocupacao_percentual: fora dos limites" })
+    .waitFor();
+  const confirm = page.getByRole("button", {
+    name: "Confirmar importação",
+    exact: true,
+  });
+  assert(await confirm.isDisabled(), "Confirmou com pendência sem opção explícita");
+  await page.getByLabel(/Confirmar somente as linhas válidas/).check();
+  await confirm.click();
+  await page.getByRole("status").filter({ hasText: "linhas válidas" }).waitFor();
+  const cells = async (row) =>
+    (await row.getByRole("cell").allTextContents()).map((t) => t.trim());
+  await page.goto(base + "/secretaria/ocupacao");
+  await page.getByLabel("De", { exact: true }).fill(`${month}-01`);
+  await page.getByLabel("Até", { exact: true }).fill(`${month}-28`);
+  const detail = page.getByRole("row").filter({ hasText: occupancyFile });
+  await detail.waitFor();
+  assert.equal(await detail.count(), 1, "A linha inválida não deveria ser gravada");
+  assert.deepEqual((await cells(detail)).slice(2, 5), ["65.5", "120", occupancyFile]);
+  await page.goto(base + "/secretaria/painel");
+  await page.getByLabel("De", { exact: true }).fill(`${month}-01`);
+  await page.getByLabel("Até", { exact: true }).fill(`${month}-28`);
+  const monthly = page.getByRole("row").filter({ hasText: `${month}-01` });
+  await monthly.first().waitFor();
+  assert.deepEqual(await cells(monthly.first()), [`${month}-01`, "65.5", "120", "1"]);
   await page.goto(base+"/secretaria/relatorios");
   const downloadPromise=page.waitForEvent("download");
   await page.getByRole("button",{name:"Exportar",exact:true}).click();
@@ -177,7 +231,7 @@ try {
   });
   assert.deepEqual(pageErrors, []);
   console.log(
-    "OK navegador: login, 8 módulos, cadastro, publicação, hospedagem no celular, rascunho persistido, revisão, envio, confirmação real, importação pela interface e download CSV. Sem erros JavaScript.",
+    "OK navegador: login, 8 módulos, cadastro, publicação, hospedagem no celular, rascunho persistido, revisão, envio, confirmação real, importação de inventário, importação de ocupação com pendência até a tela de Ocupação e a Visão geral, e download CSV. Sem erros JavaScript.",
   );
   await lodge.close();
 } finally {
